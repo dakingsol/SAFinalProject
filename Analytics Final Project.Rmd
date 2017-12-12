@@ -1,0 +1,1211 @@
+---
+title: "College Football Project"
+author: "Matt Brownsword"
+date: "11/20/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+if (!require("pacman")){ install.packages("pacman") }
+pacman::p_load("knitr","mosaic","plyr","ggplot2","foreign","gridExtra")
+
+## Set some default options R Markdown
+opts_chunk$set(tidy=TRUE,echo=FALSE,results='markup',strip.white=TRUE,cache=T,highlight=TRUE,width.cutoff=132,size='footnotesize',message=FALSE,warning=TRUE,comment=NA)
+knitr::opts_chunk$set(echo =TRUE)
+library(pander)
+install.packages("tables", repos='http://cran.us.r-project.org')
+
+# Default options in R
+options(digits=4,width=100,scipen=12)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+#Descriptors
+```{r}
+CollegeFootball <- read.csv("CollegeFootball.csv", stringsAsFactors=FALSE)
+
+as.character(CollegeFootball$hometeam)
+as.character(CollegeFootball$winningTeam)
+as.character(CollegeFootball$awayteam)
+as.character(CollegeFootball$losingTeam)
+as.numeric(CollegeFootball$homeOpeningSpread)
+as.numeric(CollegeFootball$awayOpeningSpread)
+
+```
+
+
+#Winners
+```{r}
+CollegeFootball$whowon <- NA
+
+for(i in 1:length(CollegeFootball$hometeam)){
+  if(!is.na(CollegeFootball$hometeam[i]) & CollegeFootball$hometeam[i] == CollegeFootball$winningTeam[i]){
+     CollegeFootball$whowon[i] <- "home"
+}
+  
+}
+
+
+for(i in 1:length(CollegeFootball$hometeam)){
+   if(!is.na(CollegeFootball$hometeam[i]) & CollegeFootball$awayteam[i] == CollegeFootball$winningTeam[i]){
+     CollegeFootball$whowon[i] <- "away"
+}
+ 
+}
+
+CollegeFootball$whowonClosefavedog <- NA
+
+for(i in 1:length(CollegeFootball$hometeam)){
+  if(!is.na(CollegeFootball$Closingfavorite[i]) & CollegeFootball$hometeam[i] == CollegeFootball$winningTeam[i] & CollegeFootball$Closingfavorite[i] == "home"){
+     CollegeFootball$whowonClosefavedog[i] <- "fave"
+}
+  
+}
+
+for(i in 1:length(CollegeFootball$hometeam)){
+  if(!is.na(CollegeFootball$Closingfavorite[i]) & CollegeFootball$awayteam[i] == CollegeFootball$winningTeam[i] & CollegeFootball$Closingfavorite[i] == "away"){
+     CollegeFootball$whowonClosefavedog[i] <- "fave"
+}
+  
+  }
+
+for(i in 1:length(CollegeFootball$hometeam)){
+   if(!is.na(CollegeFootball$Closingfavorite[i]) & CollegeFootball$awayteam[i] == CollegeFootball$winningTeam[i] & CollegeFootball$Closingfavorite[i] == "home"){
+     CollegeFootball$whowonClosefavedog[i] <- "dog"
+}
+ 
+}
+
+for(i in 1:length(CollegeFootball$hometeam)){
+   if(!is.na(CollegeFootball$Closingfavorite[i]) & CollegeFootball$hometeam[i] == CollegeFootball$winningTeam[i] & CollegeFootball$Closingfavorite[i] == "away"){
+     CollegeFootball$whowonClosefavedog[i] <- "dog"
+}
+ 
+}
+
+table(CollegeFootball$whowonClosefavedog)
+
+```
+
+#Favorite Spreads
+
+```{r}
+CollegeFootball$PointDifferential <- CollegeFootball$winningScore-CollegeFootball$losingScore
+
+CollegeFootball$Openingfavorite <- NA
+CollegeFootball$favoriteOpeningspread <- NA
+
+for(i in 1:length(CollegeFootball$date)){
+   if(CollegeFootball$homeOpeningSpread[i] <= 0 & !is.na(CollegeFootball$homeOpeningSpread[i])){
+    CollegeFootball$Openingfavorite[i] <- "home" 
+    CollegeFootball$favoriteOpeningspread[i] <- CollegeFootball$homeOpeningSpread[i]
+}
+ 
+  }
+
+for(i in 1:length(CollegeFootball$date)){
+  if(CollegeFootball$awayOpeningSpread[i] <= 0 & !is.na(CollegeFootball$awayOpeningSpread[i])){
+    CollegeFootball$Openingfavorite[i] <- "away" 
+    CollegeFootball$favoriteOpeningspread[i] <- CollegeFootball$awayOpeningSpread[i]
+}
+  
+  }
+
+for(i in 1:length(CollegeFootball$date)){
+   if(CollegeFootball$favoriteOpeningspread[i] == 0.0 & !is.na(CollegeFootball$awayOpeningSpread[i])){
+    CollegeFootball$Openingfavorite[i] <- "pick" 
+}
+ 
+  }
+
+table(CollegeFootball$Openingfavorite)
+table(CollegeFootball$favoriteOpeningspread)
+
+CollegeFootball$Closingfavorite <- NA
+CollegeFootball$favoriteClosingspread <- NA
+
+for(i in 1:length(CollegeFootball$hometeam)){
+   if(CollegeFootball$awayClosingSpread[i] >= 0 & !is.na(CollegeFootball$awayClosingSpread[i])){
+    CollegeFootball$Closingfavorite[i] <- "home" 
+    CollegeFootball$favoriteClosingspread[i] <- CollegeFootball$homeClosingSpread[i]
+}
+ 
+  }
+
+for(i in 1:length(CollegeFootball$hometeam)){
+  if(CollegeFootball$awayClosingSpread[i] <= 0 & !is.na(CollegeFootball$awayClosingSpread[i])){
+    CollegeFootball$Closingfavorite[i] <- "away" 
+    CollegeFootball$favoriteClosingspread[i] <- CollegeFootball$awayClosingSpread[i]
+}
+  
+  }
+
+for(i in 1:length(CollegeFootball$hometeam)){
+    if(CollegeFootball$awayClosingSpread[i] == 0.0 & !is.na(CollegeFootball$awayClosingSpread[i])){
+    CollegeFootball$Closingfavorite[i] <- "pick" 
+    CollegeFootball$favoriteClosingspread[i] <- CollegeFootball$awayClosingSpread[i]
+}
+
+  }
+
+table(CollegeFootball$Closingfavorite)
+
+
+
+ 
+as.numeric(CollegeFootball$favoriteClosingspread)
+as.numeric(CollegeFootball$favoriteOpeningspread)
+as.character(CollegeFootball$Openingfavorite)
+
+```
+
+
+#Movement
+```{r}
+
+CollegeFootball$linemovement <- NA
+
+
+
+CollegeFootball$linemovement <- as.numeric(CollegeFootball$favoriteClosingspread) - as.numeric(CollegeFootball$favoriteOpeningspread)
+levels(CollegeFootball$hometeam)
+
+CollegeFootball$MLmovement <- as.numeric(CollegeFootball$favoriteClosingLine) - as.numeric(CollegeFootball$favoriteOpeningLine)
+
+table(CollegeFootball$favoriteOpeningLine)
+
+
+CollegeFootball$linemovement[CollegeFootball$Openingfavorite == "home" & CollegeFootball$Closingfavorite == "away" & !is.na(CollegeFootball$favoriteOpeningspread)] <- as.numeric(CollegeFootball$favoriteOpeningspread[CollegeFootball$Openingfavorite == "home" & CollegeFootball$Closingfavorite == "away" & !is.na(CollegeFootball$favoriteOpeningspread)]) + as.numeric(CollegeFootball$favoriteClosingspread[CollegeFootball$Openingfavorite == "home" & CollegeFootball$Closingfavorite == "away" & !is.na(CollegeFootball$favoriteOpeningspread)])
+
+CollegeFootball$linemovement[CollegeFootball$Openingfavorite == "away" & CollegeFootball$Closingfavorite == "home" & !is.na(CollegeFootball$favoriteOpeningspread)] <- as.numeric(CollegeFootball$favoriteOpeningspread[CollegeFootball$Openingfavorite == "away" & CollegeFootball$Closingfavorite == "home" & !is.na(CollegeFootball$favoriteOpeningspread)]) + as.numeric(CollegeFootball$favoriteClosingspread[CollegeFootball$Openingfavorite == "away" & CollegeFootball$Closingfavorite == "home" & !is.na(CollegeFootball$favoriteOpeningspread)])
+
+CollegeFootball$MLmovement <- NA
+
+CollegeFootball$MLmovement <- as.numeric(CollegeFootball$favoriteClosingLine) - as.numeric(CollegeFootball$favoriteOpeningLine)
+
+for(i in 1:length(CollegeFootball$date)){
+  if(CollegeFootball$Openingfavorite[i] == "home" & CollegeFootball$Closingfavorite[i] == "away" & !is.na(CollegeFootball$favoriteOpeningspread[i])){
+    CollegeFootball$MLmovement[i] <- as.numeric(CollegeFootball$favoriteOpeningLine[i]) + as.numeric(CollegeFootball$favoriteClosingLine[i]) - 200
+  }
+}
+
+for(i in 1:length(CollegeFootball$date)){
+  if(CollegeFootball$Openingfavorite[i] == "away" & CollegeFootball$Closingfavorite[i] == "home" & !is.na(CollegeFootball$favoriteOpeningspread[i])){
+    CollegeFootball$MLmovement[i] <- as.numeric(CollegeFootball$favoriteOpeningLine[i]) + as.numeric(CollegeFootball$favoriteClosingLine[i]) - 200
+  }
+}
+
+
+
+
+```
+
+
+#Who Covered Home Away
+
+```{r}
+
+CollegeFootball$whocoveredClosing <- NA
+
+for(i in 1:length(CollegeFootball$Closingfavorite)){
+    if(CollegeFootball$whowon[i] == CollegeFootball$Closingfavorite[i] & CollegeFootball$Closingfavorite[i] == "home" & CollegeFootball$PointDifferential[i] >= abs(CollegeFootball$favoriteClosingspread[i]) & !is.na(CollegeFootball$favoriteClosingspread[i])){
+    CollegeFootball$whocoveredClosing[i] <- "home"
+}
+
+}
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whowon[i] == CollegeFootball$Closingfavorite[i] & CollegeFootball$Closingfavorite[i] == "home" & CollegeFootball$PointDifferential[i] <= abs(CollegeFootball$favoriteClosingspread[i])& !is.na(CollegeFootball$favoriteClosingspread[i])){
+    CollegeFootball$whocoveredClosing[i] <- "away"
+    }
+  }
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whowon[i] == CollegeFootball$Closingfavorite[i] & CollegeFootball$Closingfavorite[i] == "away" & CollegeFootball$PointDifferential[i] >= abs(CollegeFootball$favoriteClosingspread[i])& !is.na(CollegeFootball$favoriteClosingspread[i])){
+    CollegeFootball$whocoveredClosing[i] <- "away"
+}
+
+}
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whowon[i] == CollegeFootball$Closingfavorite[i] & CollegeFootball$Closingfavorite[i] == "away" & CollegeFootball$PointDifferential[i] <= abs(CollegeFootball$favoriteClosingspread[i])& !is.na(CollegeFootball$favoriteClosingspread[i])){
+    CollegeFootball$whocoveredClosing[i] <- "home"
+    }
+  }
+
+  
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whowon[i] != CollegeFootball$Closingfavorite[i] & CollegeFootball$Closingfavorite[i] == "away"& !is.na(CollegeFootball$favoriteClosingspread[i])){
+    CollegeFootball$whocoveredClosing[i] <- "home"
+    }
+
+}
+  
+  
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whowon[i] != CollegeFootball$Closingfavorite[i] & CollegeFootball$Closingfavorite[i] == "home"& !is.na(CollegeFootball$favoriteClosingspread[i])){
+    CollegeFootball$whocoveredClosing[i] <- "away"
+    }
+
+}
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whowon[i] == CollegeFootball$Closingfavorite[i] & CollegeFootball$Closingfavorite[i] == "home" & CollegeFootball$PointDifferential[i] == abs(CollegeFootball$favoriteClosingspread[i])& !is.na(CollegeFootball$favoriteClosingspread[i])){
+    CollegeFootball$whocoveredClosing[i] <- "push"
+}
+
+}
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whowon[i] == CollegeFootball$Closingfavorite[i] & CollegeFootball$Closingfavorite[i] == "away" & CollegeFootball$PointDifferential[i] == abs(CollegeFootball$favoriteClosingspread[i])& !is.na(CollegeFootball$favoriteClosingspread[i])){
+    CollegeFootball$whocoveredClosing[i] <- "push"
+    }
+  }
+
+table(CollegeFootball$whocoveredClosing)
+table(CollegeFootball$Closingfavorite)
+
+
+table(CollegeFootball$whocoveredClosing[CollegeFootball$Closingfavorite == "home" & CollegeFootball$linemovement >= 3])
+
+table(CollegeFootball$whocoveredClosing[CollegeFootball$Closingfavorite == "away" & CollegeFootball$linemovement >= 3])
+
+as.character(CollegeFootball$whocoveredClosing)
+as.character(CollegeFootball$Closingfavorite)
+
+```
+
+
+
+
+#Who Covered Fave Dog
+
+
+```{r}
+CollegeFootball$favedogClosing <- NA
+
+
+for(i in 1:length(CollegeFootball$homeClosingSpread)){
+    if(CollegeFootball$whocoveredClosing[i] == CollegeFootball$Closingfavorite[i] & !is.na(CollegeFootball$whocoveredClosing[i])){
+      CollegeFootball$favedogClosing[i] <- "fave"
+    }
+}
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whocoveredClosing[i] != CollegeFootball$Closingfavorite[i] & !is.na(CollegeFootball$whocoveredClosing[i])){
+    CollegeFootball$favedogClosing[i] <- "dog"
+    }
+  }
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whocoveredClosing[i] == "push" & !is.na(CollegeFootball$whocoveredClosing[i])){
+    CollegeFootball$favedogClosing[i] <- "push"
+    }
+  }
+
+table(CollegeFootball$favedogClosing)
+
+table(CollegeFootball$favedogClosing[CollegeFootball$linemovement >= 1])
+
+getwd()
+
+
+```
+
+#Who Covered Opening Home Away
+
+```{r}
+
+
+
+CollegeFootball$whocoveredOpening <- NA
+
+for(i in 1:length(CollegeFootball$favoriteOpeningspread)){
+    if(!is.na(CollegeFootball$favoriteOpeningspread[i]) & !is.na(CollegeFootball$Openingfavorite[i]) & CollegeFootball$whowon[i] == CollegeFootball$Openingfavorite[i] & CollegeFootball$Openingfavorite[i] == "home" & CollegeFootball$PointDifferential[i] >= abs(CollegeFootball$favoriteOpeningspread[i])){
+    CollegeFootball$whocoveredOpening[i] <- "home"
+}
+
+}
+
+as.character(CollegeFootball$whowon)
+
+
+for(i in 1:length(CollegeFootball$favoriteOpeningspread)){
+    if(!is.na(CollegeFootball$favoriteOpeningspread[i]) & !is.na(CollegeFootball$Openingfavorite[i]) & CollegeFootball$whowon[i] == CollegeFootball$Openingfavorite[i] & CollegeFootball$Openingfavorite[i] == "home" & CollegeFootball$PointDifferential[i] <= abs(CollegeFootball$favoriteOpeningspread[i])){
+    CollegeFootball$whocoveredOpening[i] <- "away"
+    }
+  }
+
+for(i in 1:length(CollegeFootball$favoriteOpeningspread)){
+    if(!is.na(CollegeFootball$favoriteOpeningspread[i]) & !is.na(CollegeFootball$Openingfavorite[i]) & CollegeFootball$whowon[i] == CollegeFootball$Openingfavorite[i] & CollegeFootball$Openingfavorite[i] == "away" & CollegeFootball$PointDifferential[i] >= abs(CollegeFootball$favoriteOpeningspread[i])){
+    CollegeFootball$whocoveredOpening[i] <- "away"
+}
+
+}
+
+for(i in 1:length(CollegeFootball$favoriteOpeningspread)){
+    if(!is.na(CollegeFootball$favoriteOpeningspread[i]) & !is.na(CollegeFootball$Openingfavorite[i]) & CollegeFootball$whowon[i] == CollegeFootball$Openingfavorite[i] & CollegeFootball$Openingfavorite[i] == "away" & CollegeFootball$PointDifferential[i] <= abs(CollegeFootball$favoriteOpeningspread[i])){
+    CollegeFootball$whocoveredOpening[i] <- "home"
+    }}
+
+  
+for(i in 1:length(CollegeFootball$favoriteOpeningspread)){
+    if(!is.na(CollegeFootball$favoriteOpeningspread[i]) & !is.na(CollegeFootball$Openingfavorite[i]) & CollegeFootball$whowon[i] != CollegeFootball$Openingfavorite[i] & CollegeFootball$Openingfavorite[i] == "away"){
+    CollegeFootball$whocoveredOpening[i] <- "home"
+    }
+
+}
+  
+  
+for(i in 1:length(CollegeFootball$favoriteOpeningspread)){
+    if(!is.na(CollegeFootball$favoriteOpeningspread[i]) & !is.na(CollegeFootball$Openingfavorite[i]) & CollegeFootball$whowon[i] != CollegeFootball$Openingfavorite[i] & CollegeFootball$Openingfavorite[i] == "home"){
+    CollegeFootball$whocoveredOpening[i] <- "away"
+    }
+
+}
+
+for(i in 1:length(CollegeFootball$favoriteOpeningspread)){
+    if(!is.na(CollegeFootball$favoriteOpeningspread[i]) & !is.na(CollegeFootball$Openingfavorite[i]) & CollegeFootball$whowon[i] == CollegeFootball$Openingfavorite[i] & CollegeFootball$Openingfavorite[i] == "home" & CollegeFootball$PointDifferential[i] == abs(CollegeFootball$favoriteOpeningspread[i])){
+    CollegeFootball$whocoveredOpening[i] <- "push"
+}
+
+}
+
+for(i in 1:length(CollegeFootball$favoriteOpeningspread)){
+    if(!is.na(CollegeFootball$favoriteOpeningspread[i]) & !is.na(CollegeFootball$Openingfavorite[i]) & CollegeFootball$whowon[i] == CollegeFootball$Openingfavorite[i] & CollegeFootball$Openingfavorite[i] == "away" & CollegeFootball$PointDifferential[i] == abs(CollegeFootball$favoriteOpeningspread[i])){
+    CollegeFootball$whocoveredOpening[i] <- "push"
+    }
+  }
+
+CollegeFootball$favedogOpening <- NA
+
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whocoveredOpening[i] == CollegeFootball$Openingfavorite[i] & !is.na(CollegeFootball$whocoveredOpening[i])){
+      CollegeFootball$favedogOpening[i] <- "fave"
+    }
+}
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whocoveredOpening[i] != CollegeFootball$Openingfavorite[i] & !is.na(CollegeFootball$whocoveredOpening[i])){
+    CollegeFootball$favedogOpening[i] <- "dog"
+    }
+  }
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+    if(CollegeFootball$whocoveredOpening[i] == "push" & !is.na(CollegeFootball$whocoveredOpening[i])){
+    CollegeFootball$favedogOpening[i] <- "push"
+    }
+  }
+
+```
+
+
+
+
+```{r}
+SpreadPts <- lm(CollegeFootball$PointDifferential~CollegeFootball$AdjustedFavoriteSpread)
+plot(x = CollegeFootball$AdjustedFavoriteSpread, y = CollegeFootball$PointDifferential)
+abline(SpreadPts, col = "red")
+as.numeric(CollegeFootball$favoriteOpeningspread)
+SpreadPtsOpening <- lm(CollegeFootball$PointDifferential~CollegeFootball$favoriteOpeningspread, na.rm = FALSE)
+SpreadPtsOpening
+plot(x = CollegeFootball$favoriteOpeningspread, y = CollegeFootball$PointDifferential)
+abline(SpreadPtsOpening, col = "red") 
+
+
+```
+
+
+#Moneylines
+```{r}
+as.numeric(CollegeFootball$favoriteOpeningspread)
+as.character(CollegeFootball$Openingfavorite)
+
+CollegeFootball$favoriteClosingLine <- NA
+as.numeric(CollegeFootball$homeClosingMoney)
+
+for(i in 1:length(CollegeFootball$homeClosingMoney)){
+   if(as.numeric(CollegeFootball$homeClosingMoney[i]) <= 0 & CollegeFootball$Closingfavorite[i] == "home" & !is.na(CollegeFootball$homeClosingMoney[i])){
+    CollegeFootball$favoriteClosingLine[i] <- CollegeFootball$homeClosingMoney[i]
+}
+ 
+  }
+
+for(i in 1:length(CollegeFootball$homeClosingMoney)){
+    if(CollegeFootball$awayClosingMoney[i] <= 0 & CollegeFootball$Closingfavorite[i] == "away" & !is.na(CollegeFootball$awayClosingMoney[i])){
+    CollegeFootball$favoriteClosingLine[i] <- CollegeFootball$awayClosingMoney[i]
+}
+
+}
+
+table(CollegeFootball$favoriteClosingLine)
+
+CollegeFootball$favoriteOpeningLine <- NA
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+  if(CollegeFootball$homeOpeningMoney[i] <= 0 & !is.na(CollegeFootball$homeOpeningMoney[i])){
+    CollegeFootball$favoriteOpeningLine[i] <- CollegeFootball$homeOpeningMoney[i]
+}
+  
+  }
+
+for(i in 1:length(CollegeFootball$homeOpeningSpread)){
+   if(CollegeFootball$awayOpeningMoney[i] <= 0 & !is.na(CollegeFootball$awayOpeningMoney[i])){
+    CollegeFootball$favoriteOpeningLine[i] <- CollegeFootball$awayOpeningMoney[i]
+}
+ 
+}
+
+for(i in 1:length(CollegeFootball$homeClosingMoney)){
+   if(as.numeric(CollegeFootball$homeClosingMoney[i]) <= 0 & CollegeFootball$Closingfavorite[i] == "home" & !is.na(CollegeFootball$homeClosingMoney[i])){
+    CollegeFootball$underdogClosingLine[i] <- CollegeFootball$awayClosingMoney[i]
+}
+ 
+  }
+
+for(i in 1:length(CollegeFootball$homeClosingMoney)){
+    if(CollegeFootball$awayClosingMoney[i] <= 0 & CollegeFootball$Closingfavorite[i] == "away" & !is.na(CollegeFootball$awayClosingMoney[i])){
+    CollegeFootball$underdogClosingLine[i] <- CollegeFootball$homeClosingMoney[i]
+}
+
+}
+
+
+```
+
+#Underdogs
+
+```{r}
+
+CollegeFootball$Openingdog <- NA
+CollegeFootball$Closingdog <- NA
+
+CollegeFootball$Openingdog[CollegeFootball$Openingfavorite == "away"] <- "home"
+CollegeFootball$Openingdog[CollegeFootball$Openingfavorite == "home"] <- "away"
+CollegeFootball$Openingdog[CollegeFootball$Openingfavorite == "pick"] <- "pick"
+
+CollegeFootball$Closingdog[CollegeFootball$Closingfavorite == "away"] <- "home"
+CollegeFootball$Closingdog[CollegeFootball$Closingfavorite == "home"] <- "away"
+CollegeFootball$Closingdog[CollegeFootball$Closingfavorite == "pick"] <- "pick"
+
+
+```
+
+
+
+#Spread Lines
+
+```{r}
+
+CollegeFootball$favoriteClosingSpreadLine <- NA
+
+for(i in 1:length(CollegeFootball$hometeam)){
+    if(CollegeFootball$awayClosingSpread[i] >= 0 & !is.na(CollegeFootball$awayClosingSpread[i])){
+    CollegeFootball$favoriteClosingSpreadLine[i] <- CollegeFootball$homeClosingLine[i]
+}
+
+  }
+
+for(i in 1:length(CollegeFootball$hometeam)){
+   if(CollegeFootball$awayClosingSpread[i] <= 0 & !is.na(CollegeFootball$awayClosingSpread[i])){
+    CollegeFootball$favoriteClosingSpreadLine[i] <- CollegeFootball$awayClosingLine[i]
+}
+ 
+  }
+
+for(i in 1:length(CollegeFootball$hometeam)){
+  if(CollegeFootball$awayClosingSpread[i] == 0.0 & !is.na(CollegeFootball$awayClosingSpread[i])){
+    CollegeFootball$favoriteClosingSpreadLine[i] <- CollegeFootball$awayClosingLine[i]
+}
+  
+}
+
+```
+
+
+#Payout Conversion
+```{r}
+CollegeFootball$favoriteClosingSpreadLinePAYOUT <- NA
+CollegeFootball$favoriteClosingSpreadLinePAYOUT[CollegeFootball$favoriteClosingSpreadLine <= 0 & !is.na(CollegeFootball$favoriteClosingSpreadLine)] <- (-100/CollegeFootball$favoriteClosingSpreadLine[CollegeFootball$favoriteClosingSpreadLine <= 0 & !is.na(CollegeFootball$favoriteClosingSpreadLine)]) 
+
+CollegeFootball$favoriteClosingSpreadLinePAYOUT[CollegeFootball$favoriteClosingSpreadLine >= 0 & !is.na(CollegeFootball$favoriteClosingSpreadLine)] <- (CollegeFootball$favoriteClosingSpreadLine[CollegeFootball$favoriteClosingSpreadLine >= 0 & !is.na(CollegeFootball$favoriteClosingSpreadLine)]/100) 
+
+
+
+-100/-110
+
+CollegeFootball$favoriteClosingLinePAYOUT <- NA
+CollegeFootball$favoriteClosingLinePAYOUT[!is.na(CollegeFootball$favoriteClosingLine)] <- -100/CollegeFootball$favoriteClosingLine[!is.na(CollegeFootball$favoriteClosingLine)]
+
+CollegeFootball$favoriteOpeningLinePAYOUT <- NA
+CollegeFootball$favoriteOpeningLinePAYOUT[!is.na(CollegeFootball$favoriteOpeningLine)] <- -100/CollegeFootball$favoriteOpeningLine[!is.na(CollegeFootball$favoriteOpeningLine)]
+
+CollegeFootball$underdogClosingLinePAYOUT <- NA
+CollegeFootball$underdogClosingLinePAYOUT[!is.na(CollegeFootball$underdogClosingLine)] <- CollegeFootball$underdogClosingLine[!is.na(CollegeFootball$underdogClosingLine)]/100
+
+
+
+CollegeFootball$MLPayoutmovement <- NA
+CollegeFootball$MLPayoutmovement <- as.numeric(CollegeFootball$favoriteClosingLinePAYOUT) - as.numeric(CollegeFootball$favoriteOpeningLinePAYOUT)
+
+for(i in 1:length(CollegeFootball$date)){
+  if(CollegeFootball$Openingfavorite[i] == "home" & CollegeFootball$Closingfavorite[i] == "away" & !is.na(CollegeFootball$favoriteOpeningspread[i])){
+    CollegeFootball$MLPayoutmovement[i] <- (1 - as.numeric(CollegeFootball$favoriteOpeningLinePAYOUT[i])) + (1 - as.numeric(CollegeFootball$favoriteClosingLinePAYOUT[i]))
+  }
+}
+
+for(i in 1:length(CollegeFootball$date)){
+  if(CollegeFootball$Openingfavorite[i] == "away" & CollegeFootball$Closingfavorite[i] == "home" & !is.na(CollegeFootball$favoriteOpeningspread[i])){
+    CollegeFootball$MLPayoutmovement[i] <- (1 - as.numeric(CollegeFootball$favoriteOpeningLinePAYOUT[i])) + (1 - as.numeric(CollegeFootball$favoriteClosingLinePAYOUT[i]))
+}
+}
+
+```
+
+##Adjusting the Spread
+
+```{r}
+
+CollegeFootball$AdjustedFavoriteSpread <- NA
+
+CollegeFootball$AdjustedFavoriteSpread[!is.na(CollegeFootball$favoriteClosingspread)] <- CollegeFootball$favoriteClosingspread[!is.na(CollegeFootball$favoriteClosingspread)] + 10*(CollegeFootball$favoriteClosingSpreadLinePAYOUT[!is.na(CollegeFootball$favoriteClosingspread)]) - 9.5
+
+```
+
+#Linear Tests
+
+###Plot
+
+```{r}
+
+ClosingMLSpread <- glm(CollegeFootball$favoriteClosingLinePAYOUT~CollegeFootball$AdjustedFavoriteSpread)
+plot(x = CollegeFootball$AdjustedFavoriteSpread,
+     y = CollegeFootball$favoriteClosingLinePAYOUT,
+     ylab = "Bet Payoff",
+     xlab = "Closing Spread",
+     main = "Spreads as a predictor \nof Moneylines"
+     )
+
+abline(ClosingMLSpread, col = "blue", lwd = 3)
+abline(ClosingMLSpread3, col = "yellow", lwd = 3)
+abline(ClosingMLSpread7, col = "deepskyblue", lwd = 3)
+abline(ClosingMLSpread28, col = "red", lwd = 3)
+abline(ClosingMLSpread10, col = "brown", lwd = 3)
+abline(ClosingMLSpread1017, col = "violet", lwd = 3)
+abline(ClosingMLSpread1728, col = "orange", lwd = 3)
+
+```
+
+###Generic 
+
+```{r}
+
+ClosingMLSpread
+summary(ClosingMLSpread)
+
+CollegeFootball$ResidCloseMLSpread <- NA
+CollegeFootball$ResidCloseMLSpread[!is.na(CollegeFootball$favoriteClosingLinePAYOUT)] <- residuals(ClosingMLSpread)
+table(CollegeFootball$ResidCloseMLSpread)
+
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread >= .08])
+
+```
+
+###Greater than 26-point Spread
+
+```{r}
+ClosingMLSpread26 <- glm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -26]~CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -26])
+plot(x = CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -26],
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -26],
+     ylab = "Bet Payoff",
+     xlab = "Closing Spread",
+     main = "Spreads as a predictor \nof Moneylines (-26 and over)"
+     )
+abline(ClosingMLSpread26, col = "red")
+summary(ClosingMLSpread26)
+
+CollegeFootball$ResidCloseMLSpread26 <- NA
+CollegeFootball$ResidCloseMLSpread26[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread <= -26] <- residuals(ClosingMLSpread26)
+table(CollegeFootball$ResidCloseMLSpread26)
+
+
+
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread26 <= -.001])
+
+177/(177+134+6)
+mean(CollegeFootball$favoriteClosingSpreadLinePAYOUT[CollegeFootball$favoriteClosingspread <= -26], na.rm = TRUE)
+
+```
+
+###Greater than 10
+
+```{r}
+
+ClosingMLSpread10 <- glm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread >= -10]~CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread >= -10])
+plot(x = CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread >= -10],
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread >= -10]
+     )
+abline(ClosingMLSpread10, col = "red")
+ClosingMLSpread10
+
+CollegeFootball$ResidCloseMLSpread10 <- NA
+CollegeFootball$ResidCloseMLSpread10[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread >= -10] <- residuals(ClosingMLSpread10)
+table(CollegeFootball$ResidCloseMLSpread10)
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread10 <= -.05 & CollegeFootball$PublicFavoritePercentage <= 56])
+
+
+```
+
+
+###Greater than 7
+
+```{r}
+
+ClosingMLSpread7 <- glm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread >= -7]~CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread >= -7])
+plot(x = CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread >= -7],
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread >= -7]
+     )
+abline(ClosingMLSpread7, col = "red")
+ClosingMLSpread7
+
+CollegeFootball$ResidCloseMLSpread7 <- NA
+CollegeFootball$ResidCloseMLSpread7[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread >= -7] <- residuals(ClosingMLSpread7)
+table(CollegeFootball$ResidCloseMLSpread7)
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread7 <= -.07])
+```
+
+###Greater than 3
+
+```{r}
+
+ClosingMLSpread3 <- glm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread >= -3]~CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread >= -3])
+plot(x = CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread >= -3],
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread >= -3],
+     ylab = "Bet Payoff",
+     xlab = "Adjusted Closing Spread",
+     main = "Spreads as a predictor \nof Moneylines (-3 and under)"
+     )
+abline(ClosingMLSpread3, col = "red")
+abline(ClosingMLSpread215, col = "blue")
+ClosingMLSpread3
+
+CollegeFootball$ResidCloseMLSpread3 <- NA
+CollegeFootball$ResidCloseMLSpread3[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread >= -3] <- residuals(ClosingMLSpread3)
+table(CollegeFootball$ResidCloseMLSpread3)
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidCloseMLSpread3 >= 0 & CollegeFootball$MLmovement <= 0])
+
+```
+
+###Between 17 and 25
+
+```{r}
+ClosingMLSpread1725 <- lm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -17 & CollegeFootball$favoriteClosingspread >= -25]~CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -17 & CollegeFootball$favoriteClosingspread >= -25])
+plot(x = CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -17 & CollegeFootball$favoriteClosingspread >= -25],
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -17 & CollegeFootball$favoriteClosingspread >= -25],
+     ylab = "Bet Payoff",
+     xlab = "Closing Spread",
+     main = "Spreads as a predictor \nof Moneylines between -17 and -25"
+     )
+abline(ClosingMLSpread1725, col = "red")
+summary(ClosingMLSpread1725)
+
+CollegeFootball$ResidCloseMLSpread1725 <- NA
+CollegeFootball$ResidCloseMLSpread1725[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread <= -17 & CollegeFootball$favoriteClosingspread >= -25] <- residuals(ClosingMLSpread1725)
+table(CollegeFootball$ResidCloseMLSpread1725)
+table(CollegeFootball$favedogClosing[CollegeFootball$favoriteClosingspread <= -17 & CollegeFootball$favoriteClosingspread >= -25])
+
+
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread1725 >= 0 & CollegeFootball$linemovement <= 0])
+
+mean(CollegeFootball$favoriteClosingSpreadLinePAYOUT[CollegeFootball$ResidCloseMLSpread1725 >= 0 & CollegeFootball$linemovement <= 0], na.rm = TRUE)
+
+table(CollegeFootball$favedogClosing[CollegeFootball$favoriteClosingspread <= -17 & CollegeFootball$favoriteClosingspread >= -25 & CollegeFootball$linemovement <= 0])
+254/(204+254)
+
+
+0.5545852-.533105/(sqrt((.5435*.4565*((1/458)+(1/876)))))
+
+0.5545852*1.9419097
+
+```
+
+###Between 10 and 17
+
+```{r}
+
+ClosingMLSpread1017 <- glm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -10 & CollegeFootball$favoriteClosingspread >= -17]~CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -10 & CollegeFootball$favoriteClosingspread >= -17])
+plot(x = CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -10 & CollegeFootball$favoriteClosingspread >= -17],
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -10 & CollegeFootball$favoriteClosingspread >= -17]
+     )
+abline(ClosingMLSpread1017, col = "red")
+ClosingMLSpread1017
+
+CollegeFootball$ResidCloseMLSpread1017 <- NA
+CollegeFootball$ResidCloseMLSpread1017[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread <= -10 & CollegeFootball$favoriteClosingspread >= -17] <- residuals(ClosingMLSpread1017)
+table(CollegeFootball$ResidCloseMLSpread1017)
+table(CollegeFootball$favedogClosing[CollegeFootball$favoriteClosingspread <= -10 & CollegeFootball$favoriteClosingspread >= -17])
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread1017 >= 0.015 & CollegeFootball$linemovement >= 0])
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidCloseMLSpread1017 <= -.008 & CollegeFootball$linemovement >= 0])
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$favoriteClosingspread <= -10 & CollegeFootball$favoriteClosingspread >= -17])
+
+```
+
+
+```{r}
+
+save(CollegeFootball,file="CollegeFootball.rda")
+
+abline(ClosingMLSpread, col = "red")
+abline(ClosingMLSpread7, col = "blue")
+abline(ClosingMLSpread3, col = "violet")
+abline(ClosingMLSpread20, col = "green")
+abline(ClosingMLSpread1728, col = "yellow")
+```
+
+###Between 2 and 5
+
+```{r}
+
+ClosingMLSpread215 <- glm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -2 & CollegeFootball$favoriteClosingspread >= -5]~CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -2 & CollegeFootball$favoriteClosingspread >= -5])
+plot(x = CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -2 & CollegeFootball$favoriteClosingspread >= -5],
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -2 & CollegeFootball$favoriteClosingspread >= -5]
+     )
+abline(ClosingMLSpread215, col = "red")
+ClosingMLSpread215
+
+CollegeFootball$ResidCloseMLSpread215 <- NA
+CollegeFootball$ResidCloseMLSpread215[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread <= -2 & CollegeFootball$favoriteClosingspread >= -5] <- residuals(ClosingMLSpread215)
+table(CollegeFootball$ResidCloseMLSpread215)
+table(CollegeFootball$favedogClosing[CollegeFootball$favoriteClosingspread <= -2 & CollegeFootball$favoriteClosingspread >= -5])
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread215 >= -2.215 & CollegeFootball$linemovement <= -2])
+
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread215 >= 0 & CollegeFootball$PublicFavoritePercentage <= 50])
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread215 <= .-228 & CollegeFootball$linemovement <= -2])
+table(CollegeFootball$favedogClosing[CollegeFootball$favoriteClosingspread == -3 & CollegeFootball$linemovement <= -2])
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidCloseMLSpread215 <= -.03])
+table(CollegeFootball$favedogOpening[CollegeFootball$ResidCloseMLSpread215 >= .03])
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidCloseMLSpread215 >= 0 & CollegeFootball$ResidCloseMLSpread3 <= 0])
+table(CollegeFootball$favoriteClosingspread[CollegeFootball$ResidCloseMLSpread215 >= 0 & CollegeFootball$ResidCloseMLSpread3 >= 0])
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread215 >= 0 & CollegeFootball$ResidCloseMLSpread3 <= 0])
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$favoriteClosingspread >= -3])
+
+739/(739+612)
+
+
+
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$favoriteClosingspread <= -2 & CollegeFootball$favoriteClosingspread >= -5])
+
+
+1093/(1093+729)
+
+```
+
+###Between 5 and 9
+
+```{r}
+
+ClosingMLSpread59 <- lm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9]~CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9])
+plot(x = CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9],
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9]
+     )
+abline(ClosingMLSpread59, col = "red")
+summary(ClosingMLSpread59)
+
+CollegeFootball$ResidCloseMLSpread59 <- NA
+CollegeFootball$ResidCloseMLSpread59[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9] <- residuals(ClosingMLSpread59)
+table(CollegeFootball$ResidCloseMLSpread59)
+table(CollegeFootball$favedogClosing[CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9])
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread59 >= -5.59 & CollegeFootball$linemovement <= 0])
+
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread59 >= 0 & CollegeFootball$PublicFavoritePercentage <= 50])
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread59 <= .-528 & CollegeFootball$linemovement <= -5])
+table(CollegeFootball$favedogClosing[CollegeFootball$favoriteClosingspread == -3 & CollegeFootball$linemovement <= -5])
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidCloseMLSpread59 <= -.03])
+table(CollegeFootball$favedogOpening[CollegeFootball$ResidCloseMLSpread59 >= .03])
+
+
+table(CollegeFootball$favoriteClosingspread[CollegeFootball$ResidCloseMLSpread59 >= 0 & CollegeFootball$ResidCloseMLSpread3 >= 0])
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidCloseMLSpread59 >= 0 & CollegeFootball$ResidCloseMLSpread3 <= 0])
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9])
+
+mean(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9], na.rm = TRUE)
+mean(CollegeFootball$underdogClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9], na.rm = TRUE)
+
+mean(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$ResidCloseMLSpread59 >= 0.005], na.rm = TRUE)
+mean(CollegeFootball$underdogClosingLinePAYOUT[CollegeFootball$ResidCloseMLSpread59 >= 0.005], na.rm = TRUE)
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidCloseMLSpread59 <= -0.01])
+mean(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$ResidCloseMLSpread59 <= -0.008], na.rm = TRUE)
+mean(CollegeFootball$underdogClosingLinePAYOUT[CollegeFootball$ResidCloseMLSpread59 <= -0.005], na.rm = TRUE)
+
+198/(198+481)*3.450574
+
+
+mean(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$ResidCloseMLSpread59 <= -0.005], na.rm = TRUE)
+mean(CollegeFootball$underdogClosingLinePAYOUT[CollegeFootball$ResidCloseMLSpread59 <= -0.005], na.rm = TRUE)
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidCloseMLSpread59 >= 0.005])
+
+476/(227+476) *  1.4135814
+(514/(514+1187))*3.309812
+514+1187
+1- 0.6978248
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$favoriteClosingspread >= -3])
+
+739/(739+612)
+
+1-0.3229018
+
+227+476
+
+
+
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9])
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidCloseMLSpread59 >= 0.006])
+
+221/(460+221)*3.3098
+
+mean(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9], na.rm = TRUE)
+
+mean(CollegeFootball$underdogClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -5 & CollegeFootball$favoriteClosingspread >= -9], na.rm = TRUE)
+
+```
+
+
+##Logtests
+
+###Plot
+
+```{r}
+
+plot(x = log(abs(CollegeFootball$AdjustedFavoriteSpread)),
+     y = CollegeFootball$favoriteClosingLinePAYOUT,
+     xlab = "log(|Favorite Closing Spread|)",
+     ylab = "Bet Payoff",
+     main = "Logarithmic Relationship \nbetween Spread and ML"
+     )
+
+abline(logtestClosingMLSpread310, col = "blue", lwd = 3)
+abline(logtestCloseMLSpread, col = "yellow", lwd = 3)
+abline(logtestClosingMLSpread3, col = "deepskyblue", lwd = 3)
+abline(logtestClosingMLSpread1120, col = "red", lwd = 3)
+abline(logtestClosingMLSpread21, col = "green", lwd = 3)
+```
+
+###Generic
+
+```{r}
+
+logtestCloseMLSpread <- lm(CollegeFootball$favoriteClosingLinePAYOUT~log(abs(CollegeFootball$AdjustedFavoriteSpread)))
+summary(logtestCloseMLSpread)
+abline(logtestCloseMLSpread, col = "green")
+
+CollegeFootball$ResidlogCloseMLSpread <- NA
+CollegeFootball$ResidlogCloseMLSpread[!is.na(CollegeFootball$favoriteClosingLinePAYOUT)] <- residuals(logtestCloseMLSpread)
+
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidlogCloseMLSpread <= -.03])
+
+504/(504+455+17)
+
+table(CollegeFootball$favedogClosing[!is.na(CollegeFootball$ResidlogCloseMLSpread)])
+
+3639/(3639+3344+36)
+
+```
+
+###Within 3
+
+```{r}
+
+logtestClosingMLSpread3 <- lm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread >= -3]~log(abs(CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread >= -3])))
+plot(x = log(abs(CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread >= -3])),
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread >= -3],
+     ylab = "Bet Payoff",
+     xlab = "log(Adjusted Closing Spread)",
+     main = "Spreads as a log predictor \nof Moneylines (-3 and under)"
+     )
+abline(logtestClosingMLSpread3, col = "red")
+summary(logtestClosingMLSpread3)
+
+CollegeFootball$ResidlogCloseMLSpread3 <- NA
+CollegeFootball$ResidlogCloseMLSpread3[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread >= -3] <- residuals(logtestClosingMLSpread3)
+table(CollegeFootball$ResidlogCloseMLSpread3)
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidlogCloseMLSpread3 <= .003 & CollegeFootball$ResidlogCloseMLSpread3 >= -.003])
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidlogCloseMLSpread3 >= 0 & CollegeFootball$linemovement >= 0])
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidlogCloseMLSpread3 <= -0.0 & CollegeFootball$linemovement <= 0])
+table(CollegeFootball$favedogClosing[CollegeFootball$favoriteClosingspread >= -3])
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$favoriteClosingspread >= -3])
+
+
+
+```
+
+
+### 3 to 10
+
+```{r}
+
+logtestClosingMLSpread310 <- lm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -3 & CollegeFootball$favoriteClosingspread >= -10]~log(abs(CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -3 & CollegeFootball$favoriteClosingspread >= -10])))
+plot(x = log(abs(CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -3 & CollegeFootball$favoriteClosingspread >= -10])),
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -3 & CollegeFootball$favoriteClosingspread >= -10],
+     xlab = "log(|Favorite Closing Spread|)",
+     ylab = "Bet Payoff",
+     main = "Logarithmic Relationship \nbetween Spread and ML from -3 to -10"
+     )
+abline(logtestClosingMLSpread310, col = "red")
+
+logtestClosingMLSpread310
+
+CollegeFootball$ResidlogCloseMLSpread310 <- NA
+CollegeFootball$ResidlogCloseMLSpread310[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread <= -3 & CollegeFootball$favoriteClosingspread >= -10] <- residuals(logtestClosingMLSpread310)
+table(CollegeFootball$ResidlogCloseMLSpread310)
+table(CollegeFootball$favedogClosing[CollegeFootball$favoriteClosingspread <= -3 & CollegeFootball$favoriteClosingspread >= -10])
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidlogCloseMLSpread310 <= -.004 & CollegeFootball$PublicFavoritePercentage <= 50])
+```
+
+###11 and 20
+
+```{r}
+
+logtestClosingMLSpread1120 <- lm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -11 & CollegeFootball$favoriteClosingspread >= -20]~log(abs(CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -11 & CollegeFootball$favoriteClosingspread >= -20])))
+plot(x = log(abs(CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -11 & CollegeFootball$favoriteClosingspread >= -20])),
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -11 & CollegeFootball$favoriteClosingspread >= -20],
+     xlab = "log(|Favorite Closing Spread|)",
+     ylab = "Bet Payoff",
+     main = "Logarithmic Relationship \nbetween Spread and ML from -11 to -20"
+     )
+abline(logtestClosingMLSpread1120, col = "red")
+
+summary(logtestClosingMLSpread1120)
+summary(logtestClosingMLSpread310)
+
+CollegeFootball$ResidlogCloseMLSpread1120 <- NA
+CollegeFootball$ResidlogCloseMLSpread1120[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread <= -11 & CollegeFootball$favoriteClosingspread >= -20] <- residuals(logtestClosingMLSpread1120)
+table(CollegeFootball$ResidlogCloseMLSpread1120)
+table(CollegeFootball$favedogClosing[CollegeFootball$favoriteClosingspread <= -11 & CollegeFootball$favoriteClosingspread >= -20])
+
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidlogCloseMLSpread1120 >= 0])
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidlogCloseMLSpread1120 >= 0.010])
+
+228/(228+192)
+
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$favoriteClosingspread <= -11 & CollegeFootball$favoriteClosingspread >= -20])
+
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidlogCloseMLSpread1120 >= 0.005 & CollegeFootball$linemovement <= 0])
+
+mean(CollegeFootball$favoriteClosingSpreadLinePAYOUT[CollegeFootball$ResidlogCloseMLSpread1120 >= 0.005 & CollegeFootball$linemovement <= 0], na.rm = TRUE)
+
+228/(228+192)*(1.9388831)
+
+447/(447+67)
+```
+
+
+
+###Legal to drink
+
+```{r}
+logtestClosingMLSpread21 <- lm(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -21]~log(abs(CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -21])))
+plot(x = log(abs(CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -21])),
+     y = CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -21],
+     ylab = "Bet Payoff",
+     xlab = "log(Adjusted Closing Spread)",
+     main = "Spreads as a log predictor \nof Moneylines (-21 and over)"
+     )
+abline(logtestClosingMLSpread21, col = "red")
+summary(logtestClosingMLSpread21)
+
+CollegeFootball$ResidlogCloseMLSpread21 <- NA
+CollegeFootball$ResidlogCloseMLSpread21[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread <= -21] <- residuals(logtestClosingMLSpread21)
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$ResidlogCloseMLSpread21 >= .01])
+table(CollegeFootball$whowonClosefavedog[CollegeFootball$favoriteClosingspread <= -21])
+
+```
+
+#Exponential Models
+
+###Plot
+
+```{r}
+
+plot(x = CollegeFootball$AdjustedFavoriteSpread,
+     y = log(CollegeFootball$favoriteClosingLinePAYOUT),
+     xlab = "Favorite Closing Spread",
+     ylab = "log(Bet Payoff)",
+     main = "Exponential Relationship \nbetween spread and ML"
+     )
+
+abline(exptestCloseMLSpread, col = "green", lwd = 3)
+abline(exptestClosingMLSpread21, col = "violet", lwd = 3)
+abline(exptestClosingMLSpreadU21, col = "yellow", lwd = 3)
+
+```
+
+###Generic
+
+```{r}
+exptestCloseMLSpread <- lm(log(CollegeFootball$favoriteClosingLinePAYOUT)~(CollegeFootball$favoriteClosingspread))
+summary(exptestCloseMLSpread)
+
+CollegeFootball$ResidexpCloseMLSpread <- NA
+CollegeFootball$ResidexpCloseMLSpread[!is.na(CollegeFootball$favoriteClosingLinePAYOUT)] <- residuals(exptestCloseMLSpread)
+
+```
+
+
+###Under 21
+
+```{r}
+
+exptestClosingMLSpreadU21 <- lm(log(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread >= -21])~(CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread >= -21]))
+plot(x = (CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread >= -21]),
+     y = log(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread >= -21]), 
+     xlab = "Favorite Closing Spread",
+     ylab = "log(Bet Payoff)",
+     main = "Exponential Relationship \nbetween spread and ML (under -21)"
+     )
+abline(exptestClosingMLSpreadU21, col = "red")
+summary(exptestClosingMLSpreadU21)
+
+CollegeFootball$ResidexpCloseMLSpreadU21 <- NA
+CollegeFootball$ResidexpCloseMLSpreadU21[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread >= -21] <- residuals(exptestClosingMLSpreadU21)
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidexpCloseMLSpreadU21 <= 0 & CollegeFootball$PublicFavoritePercentage >= 70])
+mean(CollegeFootball$favoriteClosingSpreadLinePAYOUT[CollegeFootball$ResidexpCloseMLSpreadU21 <= 0 & CollegeFootball$PublicFavoritePercentage >= 70], na.rm = TRUE)
+
+148/(148+123)*(1.9541227)
+
+table(CollegeFootball$favedogClosing[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread >= -21 & CollegeFootball$PublicFavoritePercentage >= 70])
+
+260/(233+260)
+
+0.5461255-0.5273834/(sqrt(.535*.465*((1/271)+(1/493))))
+```
+
+### Legal to drink II
+
+```{r}
+
+exptestClosingMLSpread21 <- lm(log(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -21])~(CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -21]))
+plot(x = (CollegeFootball$AdjustedFavoriteSpread[CollegeFootball$favoriteClosingspread <= -21]),
+     y = log(CollegeFootball$favoriteClosingLinePAYOUT[CollegeFootball$favoriteClosingspread <= -21]),
+      xlab = "Favorite Closing Spread",
+     ylab = "log(Bet Payoff)",
+     main = "Exponential Relationship \nbetween spread and ML (over -21)"
+     )
+     
+abline(exptestClosingMLSpread21, col = "red")
+summary(exptestClosingMLSpread21)
+
+CollegeFootball$ResidexpCloseMLSpread21 <- NA
+CollegeFootball$ResidexpCloseMLSpread21[!is.na(CollegeFootball$favoriteClosingLinePAYOUT) & CollegeFootball$favoriteClosingspread <= -21] <- residuals(exptestClosingMLSpread21)
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidexpCloseMLSpread21 >= 0 & CollegeFootball$PublicFavoritePercentage <= 56])
+```
+
+
+
+
+
+```{r}
+
+table(CollegeFootball$favedogClosing[CollegeFootball$PublicFavoritePercentage >= 67])
+summary(CollegeFootball$PublicFavoritePercentage, na.rm = TRUE)
+table(CollegeFootball$whowon)
+table(CollegeFootball$favedogClosing[CollegeFootball$PublicFavoritePercentage <= 49 & CollegeFootball$ResidexpCloseMLSpread <= -.008])
+
+281/(281+17282)
+
+table(CollegeFootball$favedogClosing[!is.na(CollegeFootball$ResidlogCloseMLSpread)])
+
+mean(CollegeFootball$favoriteClosingLinePAYOUT, na.rm = TRUE)
+table(CollegeFootball$whowonClosefavedog[!is.na(CollegeFootball$favoriteClosingLinePAYOUT)])
+
+5207/(5207+1806)
+
+
+```
+
+#LineMovementTests
+
+```{r}
+
+
+
+
+plot(x = CollegeFootball$linemovement[!is.na(CollegeFootball$MLPayoutmovement)& CollegeFootball$linemovement >= -10 & CollegeFootball$linemovement <= 10], y = CollegeFootball$MLPayoutmovement[!is.na(CollegeFootball$MLPayoutmovement) & CollegeFootball$linemovement >= -10 & CollegeFootball$linemovement <= 10], xlab = "Line Movement", ylab = "Moneyline Movement", main = "Comparing Velocities")
+
+LMmovements <- lm(CollegeFootball$MLPayoutmovement[!is.na(CollegeFootball$MLPayoutmovement) & CollegeFootball$linemovement >= -10 & CollegeFootball$linemovement <= 10]~CollegeFootball$linemovement[!is.na(CollegeFootball$MLPayoutmovement) & CollegeFootball$linemovement >= -10 & CollegeFootball$linemovement <= 10])
+
+abline(LMmovements, col = "red")
+summary(LMmovements)
+
+CollegeFootball$ResidLMMs[!is.na(CollegeFootball$MLPayoutmovement) & !(is.na(CollegeFootball$linemovement)) & CollegeFootball$linemovement >= -10 & CollegeFootball$linemovement <= 10] <- residuals(LMmovements)
+
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidLMMs >= .03 & CollegeFootball$PublicFavoritePercentage <= 50])
+
+table(CollegeFootball$favedogClosing[!is.na(CollegeFootball$MLPayoutmovement) & !(is.na(CollegeFootball$linemovement)) & CollegeFootball$linemovement >= -10 & CollegeFootball$linemovement <= 10]) 
+
+table(CollegeFootball$favedogClosing[CollegeFootball$ResidLMMs >= 0.04 & CollegeFootball$PublicFavoritePercentage <= 50])
+
+150/(150+116)
+676/(676+647)
+
+table(CollegeFootball$favedogClosing[ CollegeFootball$PublicFavoritePercentage <= 50 & CollegeFootball$linemovement >= -10 & CollegeFootball$linemovement <= 10])
+
+
+0.564-0.5109599/(sqrt(.53*.47*((1/266)+(1/1323))))
+```
+
+#PercentBetFavorite
+
+```{r}
+
+CollegeFootball$PublicFavoritePercentage <- NA
+CollegeFootball$PublicFavoritePercentage[!is.na(CollegeFootball$percentbethome) & CollegeFootball$Closingfavorite == "home"] <- CollegeFootball$percentbethome[!is.na(CollegeFootball$percentbethome) & CollegeFootball$Closingfavorite == "home"]
+
+CollegeFootball$PublicFavoritePercentage[!is.na(CollegeFootball$percentbethome) & CollegeFootball$Closingfavorite == "away"] <- CollegeFootball$percentbetaway[!is.na(CollegeFootball$percentbethome) & CollegeFootball$Closingfavorite == "away"]
+
+CollegeFootball$PublicFavoritePercentage[!is.na(CollegeFootball$percentbethome) & CollegeFootball$Closingfavorite == "away"] <- CollegeFootball$percentbetaway[!is.na(CollegeFootball$percentbethome) & CollegeFootball$Closingfavorite == "away"]
+
+CollegeFootball$PublicFavoritePercentage[CollegeFootball$PublicFavoritePercentage == 0] <- NA
+```
+
+
+
+###Random Tests
+```{r}
+
+
+
+
+
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
